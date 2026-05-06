@@ -1,0 +1,53 @@
+<?xml version="1.0" encoding="UTF-8"?>
+<definitions xmlns="http://www.omg.org/spec/BPMN/20100524/MODEL"
+    xmlns:flowable="http://flowable.org/bpmn"
+    xmlns:bpmndi="http://www.omg.org/spec/BPMN/20100524/DI"
+    xmlns:omgdc="http://www.omg.org/spec/DD/20100524/DC"
+    xmlns:omgdi="http://www.omg.org/spec/DD/20100524/DI"
+    xmlns:xsi="http://www.w3.org/2001/XMLSchema-instance"
+    xsi:schemaLocation="http://www.omg.org/spec/BPMN/20100524/MODEL
+        http://www.omg.org/spec/BPMN/20100524/MODEL/BPMN20.xsd"
+    targetNamespace="http://www.archierp.ma/bpmn/autorisation"
+    id="demande_autorisation_construire"
+    name="Demande d'Autorisation de Construire">
+
+    <collaboration id="Collaboration_DemandeAutorisation">
+        <participant id="Architect_Pool" name="Cabinet d'Architecture" processRef="Process_DemandeAutorisation" />
+    </collaboration>
+
+    <process id="Process_DemandeAutorisation" name="Processus Demande Autorisation de Construire" isExecutable="true">
+        <startEvent id="StartEvent_DemandeCreation" name="Demande créée" />
+        <userTask id="Task_PreparerDossier" name="Préparer &amp; Compléter le dossier" />
+        <sequenceFlow id="Flow_StartToPreparer" sourceRef="StartEvent_DemandeCreation" targetRef="Task_PreparerDossier" />
+        
+        <exclusiveGateway id="Gateway_DocsComplets" name="Dossier complet ?" />
+        <sequenceFlow id="Flow_PreparedToGateway" sourceRef="Task_PreparerDossier" targetRef="Gateway_DocsComplets" />
+
+        <userTask id="Task_AjouterDocuments" name="Ajouter documents manquants" />
+        <sequenceFlow id="Flow_DocsIncomplete" sourceRef="Gateway_DocsComplets" targetRef="Task_AjouterDocuments" name="NON">
+            <conditionExpression xsi:type="tFormalExpression">${docsComplets == false}</conditionExpression>
+        </sequenceFlow>
+        <sequenceFlow id="Flow_AjoutDocToGateway" sourceRef="Task_AjouterDocuments" targetRef="Gateway_DocsComplets" />
+
+        <userTask id="Task_DepotDossier" name="Déposer le dossier" />
+        <sequenceFlow id="Flow_DocsOk" sourceRef="Gateway_DocsComplets" targetRef="Task_DepotDossier" name="OUI">
+            <conditionExpression xsi:type="tFormalExpression">${docsComplets == true}</conditionExpression>
+        </sequenceFlow>
+
+        <userTask id="Task_Commission" name="Commission d'Examen" />
+        <sequenceFlow id="Flow_DepotToCommission" sourceRef="Task_DepotDossier" targetRef="Task_Commission" />
+
+        <exclusiveGateway id="Gateway_Decision" name="Décision ?" />
+        <sequenceFlow id="Flow_CommissionToDecision" sourceRef="Task_Commission" targetRef="Gateway_Decision" />
+
+        <endEvent id="EndEvent_Success" name="Autorisation accordée ✓" />
+        <sequenceFlow id="Flow_Accord" sourceRef="Gateway_Decision" targetRef="EndEvent_Success" name="ACCORD">
+            <conditionExpression xsi:type="tFormalExpression">${decision == 'ACCORD'}</conditionExpression>
+        </sequenceFlow>
+
+        <sequenceFlow id="Flow_Rejet" sourceRef="Gateway_Decision" targetRef="Task_PreparerDossier" name="REJET avec remarques">
+            <conditionExpression xsi:type="tFormalExpression">${decision == 'REJET'}</conditionExpression>
+        </sequenceFlow>
+    </process>
+
+</definitions>
